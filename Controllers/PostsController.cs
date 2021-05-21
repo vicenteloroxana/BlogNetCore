@@ -76,11 +76,20 @@ namespace Blog.Controllers
 
         // POST: PostsController/Create
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Create(IFormCollection collection)
+        public ActionResult Create(PostDTO model)
         {
+            Post newPost = new Post()
+            {
+                Titulo = model.Titulo,
+                Imagen = model.Imagen,
+                Contenido = model.Contenido,
+                Categoria = model.Categoria,
+                Fecha_de_creacion = model.Fecha_de_creacion
+            };
             try
             {
+                _context.Posts.Add(newPost);
+                _context.SaveChanges();
                 return RedirectToAction(nameof(Index));
             }
             catch
