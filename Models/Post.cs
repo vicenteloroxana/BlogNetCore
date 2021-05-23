@@ -15,5 +15,6 @@ namespace Blog.Models
         public byte[] Imagen { get; set; }
         public string Categoria { get; set; }
         public DateTime Fecha_de_creacion { get; set; }
+        public bool EstaBorrado { get; set; }
     }
 }
