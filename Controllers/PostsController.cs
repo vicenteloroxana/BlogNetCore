@@ -22,13 +22,17 @@ namespace Blog.Controllers
             _context = context;
         }
 
+        public PostsController()
+        {
+        }
+
         // GET: PostsController/Details/5
         public IActionResult Details(int idPost) {
             Post postDB = _context.Posts.Find(idPost);
             bool validateIfDataIsNull = postDB == null;
 
             if (validateIfDataIsNull) {
-                return NotFound();
+                return NotFound(404);
             }
 
             PostDTO postDTO = new PostDTO()
@@ -119,7 +123,7 @@ namespace Blog.Controllers
             }
             catch
             {
-                return BadRequest();
+                return BadRequest("Petición o Solicitud Incorrecta ");
             }
 
             return RedirectToAction(nameof(Index));
@@ -151,7 +155,7 @@ namespace Blog.Controllers
             }
             catch
             {
-                return BadRequest();
+                return BadRequest("Petición o Solicitud Incorrecta");
             }
             return RedirectToAction(nameof(Index));
         }
