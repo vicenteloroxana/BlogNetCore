@@ -1,9 +1,11 @@
-﻿using Blog.Models;
+﻿using Blog.Data;
+using Blog.Models;
+using Blog.Models.DTO;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -11,27 +13,47 @@ namespace Blog.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly ILogger<HomeController> _logger;
+        private BlogContext _context;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(BlogContext context)
         {
-            _logger = logger;
+            _context = context;
         }
 
-        public IActionResult Index()
+        // GET: PostsController
+        public async Task<ActionResult> Index()
         {
-            return View();
+            var postsBD = await (from post in _context.Posts
+                                 orderby post.Fecha_de_creacion descending
+                                 select new
+                                 {
+                                     ID = post.ID,
+                                     Titulo = post.Titulo,
+                                     Imagen = post.Imagen,
+                                     Categoria = post.Categoria,
+                                     Fecha = post.Fecha_de_creacion
+                                 }).ToListAsync();
+
+            List<PostDTO> postsDTO = postsBD
+                .Select(post => new PostDTO()
+                {
+                    ID = post.ID,
+                    Titulo = post.Titulo,
+                    Imagen = post.Imagen,
+                    Categoria = post.Categoria,
+                    Fecha_de_creacion = post.Fecha
+                }).ToList();
+
+            return View(postsDTO);
         }
 
-        public IActionResult Privacy()
-        {
-            return View();
-        }
+        public ActionResult convertImg(int idPost) {
+            var img = (from post in _context.Posts
+                       where post.ID == idPost
+                       select post.Imagen
+                       ).FirstOrDefault();
 
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            return File(img,"Imagenes/jpg");
         }
     }
 }
