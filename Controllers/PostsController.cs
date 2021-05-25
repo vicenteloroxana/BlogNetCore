@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.IO;
+using System.Web;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -18,32 +20,6 @@ namespace Blog.Controllers
         public PostsController(BlogContext context)
         {
             _context = context;
-        }
-        // GET: PostsController
-        public async Task<ActionResult> Index()
-        {
-            var postsBD = await(from post in _context.Posts
-                                orderby post.Fecha_de_creacion descending
-                                select new
-                                {
-                                    ID = post.ID,
-                                    Titulo = post.Titulo,
-                                    Imagen = post.Imagen,
-                                    Categoria = post.Categoria,
-                                    Fecha = post.Fecha_de_creacion
-                                }).ToListAsync();
-
-            List<PostDTO> postsDTO = postsBD
-                .Select(post => new PostDTO()
-                {
-                    ID = post.ID,
-                    Titulo = post.Titulo,
-                    Imagen = post.Imagen,
-                    Categoria = post.Categoria,
-                    Fecha_de_creacion = post.Fecha
-                }).ToList();
-
-            return View(postsDTO);
         }
 
         // GET: PostsController/Details/5
@@ -76,12 +52,28 @@ namespace Blog.Controllers
 
         // POST: PostsController/Create
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Create(IFormCollection collection)
+        public ActionResult Create(PostDTO model, IFormFile imagen)
         {
+            Post newPost = new Post()
+            {
+                Titulo = model.Titulo,
+                Contenido = model.Contenido,
+                Categoria = model.Categoria,
+                Fecha_de_creacion = model.Fecha_de_creacion
+            };
+
+            using (var imgTemporal = new MemoryStream()) 
+            {
+                imagen.CopyTo(imgTemporal);
+                newPost.Imagen = imgTemporal.ToArray();
+            }
+
+            _context.Posts.Add(newPost);
+
             try
             {
-                return RedirectToAction(nameof(Index));
+                _context.SaveChanges();
+                return RedirectToAction("Index","Home");
             }
             catch
             {
@@ -98,16 +90,39 @@ namespace Blog.Controllers
         // POST: PostsController/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, IFormCollection collection)
+        public async Task<ActionResult> Edit(int idPost, PostDTO model, IFormFile imagen)
         {
+            Post postDB = await _context.Posts.FindAsync(idPost);
+            bool validateIfDataIsNull = postDB == null;
+
+            if (validateIfDataIsNull)
+            {
+                return NotFound();
+            }
+
+            postDB.Titulo = model.Titulo;
+            postDB.Contenido = model.Contenido;
+            postDB.Categoria = model.Categoria;
+            postDB.Fecha_de_creacion = model.Fecha_de_creacion;
+
+            using (var imgTemporal = new MemoryStream()) 
+            {
+                imagen.CopyTo(imgTemporal);
+                postDB.Imagen = imgTemporal.ToArray();
+            }
+
+            _context.Posts.Update(postDB);
+
             try
             {
-                return RedirectToAction(nameof(Index));
+                _context.SaveChanges();
             }
             catch
             {
-                return View();
+                return BadRequest();
             }
+
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: PostsController/Delete/5
@@ -117,18 +132,28 @@ namespace Blog.Controllers
         }
 
         // POST: PostsController/Delete/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Delete(int id, IFormCollection collection)
+        [HttpPost, ActionName("Delete")]
+        public async Task<ActionResult> DeleteConfirmed(int idPost)
         {
+            Post postDB = await _context.Posts.FindAsync(idPost);
+            bool validateIfDataIsNull = postDB == null;
+
+            if (validateIfDataIsNull)
+            {
+                return NotFound();
+            }
+
+            _context.Posts.Remove(postDB);
+
             try
             {
-                return RedirectToAction(nameof(Index));
+                _context.SaveChanges();
             }
             catch
             {
-                return View();
+                return BadRequest();
             }
+            return RedirectToAction(nameof(Index));
         }
     }
 }
